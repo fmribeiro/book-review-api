@@ -1,6 +1,5 @@
 package com.resenha.microserviceresenha.config;
 
-import com.google.api.client.util.IOUtils;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
@@ -10,7 +9,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.core.env.Environment;
-import org.springframework.core.io.ClassPathResource;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -27,21 +25,15 @@ public class FirebaseConfig {
     @Primary
     @Bean
     public void firebaseInit(){
-        InputStream inputStream = null;
 
         try{
+            InputStream inputStream = null;
             String firebaseConfig = environment.getProperty("firebase.config");
-            inputStream = new ClassPathResource(firebaseConfig).getInputStream();
 
             Base64.Decoder decoder = Base64.getDecoder();
-            final byte[] decode = decoder.decode(inputStream.readAllBytes());
+            final byte[] decode = decoder.decode(firebaseConfig);
             inputStream = new ByteArrayInputStream(decode);
 
-        } catch (IOException e) {
-            log.error("FirebaseConfig Error:: ", e.getLocalizedMessage());
-        }
-
-        try{
             FirebaseOptions firebaseOptions = FirebaseOptions.builder()
                     .setCredentials(GoogleCredentials.fromStream(inputStream))
                     .build();
