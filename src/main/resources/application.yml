@@ -51,6 +51,8 @@ security:
     - /books
     - /users
     - /users/idToken/**
-    - /swagger-ui/*
+    - /swagger-ui/**
+    - /swagger-resources/**
+    - /v2/api-docs
   exposed-headers:
     - X-Xsrf-Token
