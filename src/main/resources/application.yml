@@ -48,6 +48,7 @@ security:
   allowed-public-apis:
     - /reviews
     - /reviews/favorites
+    - /reviews/book/**
     - /books
     - /users
     - /users/idToken/**
