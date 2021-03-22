@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.resenha.microserviceresenha.data.model.Book;
 import com.resenha.microserviceresenha.data.repositories.BookRepository;
 import com.resenha.microserviceresenha.dto.BookDTO;
+import com.resenha.microserviceresenha.dto.ReviewDTO;
 import com.resenha.microserviceresenha.dto.model.BookModelDTO;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -69,7 +70,7 @@ public class BooksService {
         SortOperation sort = sort(Sort.by(Sort.Direction.DESC, "_id"));
         LimitOperation limitOperation = new LimitOperation(10);
 
-        Aggregation aggregation = Aggregation.newAggregation(lookup, unwind, limitOperation, sort);
+        Aggregation aggregation = Aggregation.newAggregation(lookup, unwind, sort, limitOperation);
         List<BookDTO> results = mongoTemplate.aggregate(aggregation, "books", BookDTO.class).getMappedResults();
         return results;
     }
