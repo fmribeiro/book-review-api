@@ -15,7 +15,7 @@ public class ReviewModelAssembler implements RepresentationModelAssembler<Review
     @Override
     public EntityModel<Review> toModel(Review review) {
         return EntityModel.of(review,
-                linkTo(methodOn(ReviewsController.class).findById(review.getId())).withSelfRel(),
-                linkTo(methodOn(ReviewsController.class).findRecentReviews()).withRel("reviews/"));
+                linkTo(methodOn(ReviewsController.class).findById(review.getId())).withSelfRel());
+//                linkTo(methodOn(ReviewsController.class).findRecentReviews()).withRel("reviews/"));
     }
 }

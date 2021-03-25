@@ -1,8 +1,11 @@
 package com.resenha.microserviceresenha.services;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.mongodb.BasicDBObject;
+import com.mongodb.client.model.Facet;
 import com.resenha.microserviceresenha.data.model.Review;
 import com.resenha.microserviceresenha.data.repositories.ReviewRepository;
+import com.resenha.microserviceresenha.dto.PageableResults;
 import com.resenha.microserviceresenha.dto.ReviewDTO;
 import com.resenha.microserviceresenha.dto.model.ReviewModelDTO;
 import lombok.AllArgsConstructor;
@@ -29,7 +32,7 @@ public class ReviewsService {
     private MongoTemplate mongoTemplate;
     private ObjectMapper objectMapper;
 
-    public List<ReviewDTO> findFirst10ReviewsOrderByCreationDate() {
+    public PageableResults findFirst10ReviewsOrderByCreationDate(int page, int size) {
         LookupOperation lookup = LookupOperation.newLookup()
                 .from("users")
                 .localField("userId")
@@ -38,11 +41,24 @@ public class ReviewsService {
         AggregationOperation unwind = Aggregation.unwind("$user");
 
         SortOperation sort = sort(Sort.by(Sort.Direction.DESC, "_id"));
-        LimitOperation limitOperation = new LimitOperation(10);
+        LimitOperation limitOperation = new LimitOperation(size);
 
-        Aggregation aggregation = Aggregation.newAggregation(lookup, unwind, limitOperation, sort);
-        List<ReviewDTO> results = mongoTemplate.aggregate(aggregation, "reviews", ReviewDTO.class).getMappedResults();
-        return results;
+        CountOperation countOperation = new CountOperation.CountOperationBuilder().as("total");
+        AddFieldsOperation addFieldsOperation = AddFieldsOperation.builder().build().addField("page", page);
+        SkipOperation skipOperation = new SkipOperation(page * size);
+
+        FacetOperation facetOperation = new FacetOperation()
+                .and(countOperation, addFieldsOperation).as("metadata")
+                .and(skipOperation, limitOperation).as("data");
+
+        AggregationOperation unwind2 = Aggregation.unwind("$metadata");
+
+        Aggregation aggregation = Aggregation.newAggregation(lookup, unwind, sort, facetOperation, unwind2);
+        List<PageableResults> aggregatedResults = mongoTemplate
+                .aggregate(aggregation, "reviews", PageableResults.class)
+                .getMappedResults();
+
+        return aggregatedResults.get(0);
     }
 
     public List<ReviewDTO> findFavoritesReviews() {

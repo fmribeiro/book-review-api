@@ -2,6 +2,7 @@ package com.resenha.microserviceresenha.controllers;
 
 import com.resenha.microserviceresenha.controllers.assemblers.ReviewModelAssembler;
 import com.resenha.microserviceresenha.data.model.Review;
+import com.resenha.microserviceresenha.dto.PageableResults;
 import com.resenha.microserviceresenha.dto.ReviewDTO;
 import com.resenha.microserviceresenha.dto.model.ReviewModelDTO;
 import com.resenha.microserviceresenha.exceptions.RecordNotFoundException;
@@ -16,9 +17,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 @Api(value="ResenhasController")
@@ -30,17 +29,24 @@ public class ReviewsController {
     private final ReviewModelAssembler assembler;
 
     @ApiOperation(value = "Fetch the recent reviews",response = ReviewDTO.class)
-    @GetMapping(value = "/reviews")
-    public ResponseEntity<List<ReviewDTO>>  findRecentReviews(){
-        List<ReviewDTO> first10OrderByFavorites = reviewsService.findFirst10ReviewsOrderByCreationDate();
-        if(first10OrderByFavorites.isEmpty()){
+    @GetMapping(value = "/reviews/page/{page}/size/{size}")
+    public ResponseEntity<List<ReviewDTO>>  findRecentReviews(@PathVariable(name = "page") Integer page,
+                                                              @PathVariable(name = "size") Integer size){
+
+        PageableResults<ReviewDTO> first10ReviewsOrderByCreationDate = reviewsService.findFirst10ReviewsOrderByCreationDate(page, size);
+        List<ReviewDTO> data = first10ReviewsOrderByCreationDate.getData();
+        if(data.isEmpty()){
             throw new RecordNotFoundException("sem filtro");
         }
+//        Map<String, Object> response = new HashMap<>();
+//        response.put("reviews", reviews);
+//        response.put("currentPage", page);
+//        response.put("totalItems", first10ReviewsOrderByCreationDate.getMetadata().getTotal());
+//        response.put("totalPages", totalPages);
 
         return ResponseEntity
                 .ok()
-                .cacheControl(CacheControl.maxAge(60, TimeUnit.SECONDS))
-                .body(first10OrderByFavorites);
+                .body(data);
     }
 
 
