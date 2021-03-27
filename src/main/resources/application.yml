@@ -47,10 +47,10 @@ security:
     - Id-Token
   allowed-public-apis:
     - /reviews/page/**
-    - /reviews/favorites
+    - /reviews/favorites/page/**
     - /reviews/book/**
-    - /books
-    - /users
+    - /books/page/**
+    - /users/page/**
     - /users/idToken/**
     - /swagger-ui/**
     - /swagger-resources/**

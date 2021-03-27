@@ -22,9 +22,12 @@ public class UserDTO {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private List<UserDTO> usersFollowing;
     @JsonProperty
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     private List<String> following;
     @JsonProperty
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     private List<BookDTO> books;
     @JsonProperty
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     private List<ReviewDTO> reviews;
 }

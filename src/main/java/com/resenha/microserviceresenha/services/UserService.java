@@ -1,13 +1,17 @@
 package com.resenha.microserviceresenha.services;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.mongodb.BasicDBObject;
 import com.resenha.microserviceresenha.data.model.User;
 import com.resenha.microserviceresenha.data.repositories.UserRepository;
+import com.resenha.microserviceresenha.dto.Metadata;
+import com.resenha.microserviceresenha.dto.PageableResults;
 import com.resenha.microserviceresenha.dto.UserDTO;
 import com.resenha.microserviceresenha.dto.model.UserModelDTO;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.bson.types.ObjectId;
+import org.springframework.core.GenericTypeResolver;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.aggregation.*;
@@ -64,7 +68,7 @@ public class UserService {
     }
 
 
-    public List<UserDTO> getAllUsers() {
+    public PageableResults getAllUsers(int page, int size) {
         LookupOperation lookup1 = LookupOperation.newLookup()
                 .from("users")
                 .localField("following")
@@ -82,13 +86,28 @@ public class UserService {
                 .localField("_id")
                 .foreignField("userId")
                 .as("reviews");
+
         SortOperation sort = sort(Sort.by(Sort.Direction.DESC, "_id"));
+        LimitOperation limitOperation = new LimitOperation(size);
 
-        LimitOperation limitOperation = new LimitOperation(10);
+        CountOperation countOperation = new CountOperation.CountOperationBuilder().as("total");
+        AddFieldsOperation addFieldsOperation = AddFieldsOperation.builder().build().addField("page", page);
+        SkipOperation skipOperation = new SkipOperation(page * size);
 
-        Aggregation aggregation = Aggregation.newAggregation(lookup1, lookup2, lookup3, limitOperation, sort);
-        List<UserDTO> results = mongoTemplate.aggregate(aggregation, "users", UserDTO.class).getMappedResults();
-        return results;
+        FacetOperation facetOperation = new FacetOperation()
+                .and(countOperation, addFieldsOperation).as("metadata")
+                .and(skipOperation, limitOperation).as("data");
+        AggregationOperation unwind2 = Aggregation.unwind("$metadata");
+
+        Aggregation aggregation = Aggregation.newAggregation(lookup1, lookup2, lookup3, sort, facetOperation, unwind2);
+        List<BasicDBObject> aggregatedResults = mongoTemplate
+                .aggregate(aggregation, "users", (BasicDBObject.class))
+                .getMappedResults();
+
+        PageableResults<UserDTO> dtoPageableResults =
+                objectMapper.convertValue(aggregatedResults.get(0), PageableResults.class);
+
+        return dtoPageableResults;
     }
 
     public List<UserDTO> mountSingleUserProfile(String userId) {

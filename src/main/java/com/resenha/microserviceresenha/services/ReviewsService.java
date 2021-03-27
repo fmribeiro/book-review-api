@@ -57,11 +57,10 @@ public class ReviewsService {
         List<PageableResults> aggregatedResults = mongoTemplate
                 .aggregate(aggregation, "reviews", PageableResults.class)
                 .getMappedResults();
-
         return aggregatedResults.get(0);
     }
 
-    public List<ReviewDTO> findFavoritesReviews() {
+    public PageableResults findFavoritesReviews(int page, int size) {
         LookupOperation lookup = LookupOperation.newLookup()
                 .from("users")
                 .localField("userId")
@@ -70,11 +69,24 @@ public class ReviewsService {
         AggregationOperation unwind = Aggregation.unwind("$user");
 
         SortOperation sort = sort(Sort.by(Sort.Direction.DESC, "likes"));
-        LimitOperation limitOperation = new LimitOperation(10);
+        LimitOperation limitOperation = new LimitOperation(size);
 
-        Aggregation aggregation = Aggregation.newAggregation(lookup, unwind, limitOperation, sort);
-        List<ReviewDTO> results = mongoTemplate.aggregate(aggregation, "reviews", ReviewDTO.class).getMappedResults();
-        return results;
+        CountOperation countOperation = new CountOperation.CountOperationBuilder().as("total");
+        AddFieldsOperation addFieldsOperation = AddFieldsOperation.builder().build().addField("page", page);
+        SkipOperation skipOperation = new SkipOperation(page * size);
+
+        FacetOperation facetOperation = new FacetOperation()
+                .and(countOperation, addFieldsOperation).as("metadata")
+                .and(skipOperation, limitOperation).as("data");
+
+        AggregationOperation unwind2 = Aggregation.unwind("$metadata");
+
+        Aggregation aggregation = Aggregation.newAggregation(lookup, unwind,  sort, facetOperation, unwind2);
+        List<PageableResults> aggregatedResults = mongoTemplate
+                .aggregate(aggregation, "reviews", PageableResults.class)
+                .getMappedResults();
+
+        return aggregatedResults.get(0);
     }
 
     public Review findById(String id) {

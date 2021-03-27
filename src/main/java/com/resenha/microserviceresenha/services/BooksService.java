@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.resenha.microserviceresenha.data.model.Book;
 import com.resenha.microserviceresenha.data.repositories.BookRepository;
 import com.resenha.microserviceresenha.dto.BookDTO;
+import com.resenha.microserviceresenha.dto.PageableResults;
 import com.resenha.microserviceresenha.dto.ReviewDTO;
 import com.resenha.microserviceresenha.dto.model.BookModelDTO;
 import lombok.AllArgsConstructor;
@@ -59,7 +60,7 @@ public class BooksService {
         return results;
     }
 
-    public List<BookDTO> findFirst10OrderByIdDesc(){
+    public PageableResults findFirst10OrderByIdDesc(int page, int size){
         LookupOperation lookup = LookupOperation.newLookup()
                 .from("users")
                 .localField("userId")
@@ -68,11 +69,23 @@ public class BooksService {
         AggregationOperation unwind = Aggregation.unwind("$user");
 
         SortOperation sort = sort(Sort.by(Sort.Direction.DESC, "_id"));
-        LimitOperation limitOperation = new LimitOperation(10);
+        LimitOperation limitOperation = new LimitOperation(size);
 
-        Aggregation aggregation = Aggregation.newAggregation(lookup, unwind, sort, limitOperation);
-        List<BookDTO> results = mongoTemplate.aggregate(aggregation, "books", BookDTO.class).getMappedResults();
-        return results;
+        CountOperation countOperation = new CountOperation.CountOperationBuilder().as("total");
+        AddFieldsOperation addFieldsOperation = AddFieldsOperation.builder().build().addField("page", page);
+        SkipOperation skipOperation = new SkipOperation(page * size);
+
+        FacetOperation facetOperation = new FacetOperation()
+                .and(countOperation, addFieldsOperation).as("metadata")
+                .and(skipOperation, limitOperation).as("data");
+
+        AggregationOperation unwind2 = Aggregation.unwind("$metadata");
+
+        Aggregation aggregation = Aggregation.newAggregation(lookup, unwind, sort, facetOperation, unwind2);
+        List<PageableResults> aggregatedResults = mongoTemplate
+                .aggregate(aggregation, "books", PageableResults.class)
+                .getMappedResults();
+        return aggregatedResults.get(0);
     }
 
     public Optional<Book> saveUpdateBook(BookModelDTO bookModelDTO){

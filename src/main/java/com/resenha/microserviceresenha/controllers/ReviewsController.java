@@ -28,25 +28,27 @@ public class ReviewsController {
     private final ReviewsService reviewsService;
     private final ReviewModelAssembler assembler;
 
-    @ApiOperation(value = "Fetch the recent reviews",response = ReviewDTO.class)
+    @ApiOperation(value = "Fetch the recent reviews",response = PageableResults.class)
     @GetMapping(value = "/reviews/page/{page}/size/{size}")
-    public ResponseEntity<List<ReviewDTO>>  findRecentReviews(@PathVariable(name = "page") Integer page,
-                                                              @PathVariable(name = "size") Integer size){
-
-        PageableResults<ReviewDTO> first10ReviewsOrderByCreationDate = reviewsService.findFirst10ReviewsOrderByCreationDate(page, size);
-        List<ReviewDTO> data = first10ReviewsOrderByCreationDate.getData();
+    public ResponseEntity<Map<String, Object>> findRecentReviews(@PathVariable(name = "page") Integer page,
+                                                                 @PathVariable(name = "size") Integer size){
+        final PageableResults<ReviewDTO> first10ReviewsOrderByCreationDate = reviewsService.findFirst10ReviewsOrderByCreationDate(page, size);
+        final List<ReviewDTO> data = first10ReviewsOrderByCreationDate.getData();
+        final int totalItems = first10ReviewsOrderByCreationDate.getMetadata().getTotal();
         if(data.isEmpty()){
             throw new RecordNotFoundException("sem filtro");
         }
-//        Map<String, Object> response = new HashMap<>();
-//        response.put("reviews", reviews);
-//        response.put("currentPage", page);
-//        response.put("totalItems", first10ReviewsOrderByCreationDate.getMetadata().getTotal());
-//        response.put("totalPages", totalPages);
+
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("currentPage", page);
+        response.put("totalItems", totalItems);
+        response.put("totalReturned", data.size());
+        response.put("totalPages", ( totalItems % size == 0 ? totalItems / size : (totalItems/ size) + 1));
+        response.put("reviews", data);
 
         return ResponseEntity
                 .ok()
-                .body(data);
+                .body(response);
     }
 
 
@@ -94,17 +96,26 @@ public class ReviewsController {
     }
 
     @ApiOperation(value = "Search most liked reviews",response = ReviewDTO.class)
-    @GetMapping(value = "/reviews/favorites")
-    public ResponseEntity<List<ReviewDTO>> findFavoritesReviews(){
-        List<ReviewDTO> first10MoreLikedReviews = reviewsService.findFavoritesReviews();
-        if(first10MoreLikedReviews.isEmpty()){
+    @GetMapping(value = "/reviews/favorites/page/{page}/size/{size}")
+    public ResponseEntity<Map<String, Object>> findFavoritesReviews(@PathVariable(name = "page") Integer page,
+                                                                @PathVariable(name = "size") Integer size){
+        final PageableResults<ReviewDTO> first10ReviewsOrderByCreationDate = reviewsService.findFavoritesReviews(page, size);
+        final List<ReviewDTO> data = first10ReviewsOrderByCreationDate.getData();
+        final int totalItems = first10ReviewsOrderByCreationDate.getMetadata().getTotal();
+        if(data.isEmpty()){
             throw new RecordNotFoundException("sem filtro");
         }
 
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("currentPage", page);
+        response.put("totalItems", totalItems);
+        response.put("totalReturned", data.size());
+        response.put("totalPages", ( totalItems % size == 0 ? totalItems / size : (totalItems/ size) + 1));
+        response.put("reviews", data);
+
         return ResponseEntity
                 .ok()
-                .cacheControl(CacheControl.maxAge(60, TimeUnit.SECONDS))
-                .body(first10MoreLikedReviews);
+                .body(response);
     }
 
     @ApiOperation(value = "Create a review",response = Review.class)

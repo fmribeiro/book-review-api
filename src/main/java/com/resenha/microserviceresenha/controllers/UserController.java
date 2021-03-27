@@ -2,6 +2,8 @@ package com.resenha.microserviceresenha.controllers;
 
 import com.resenha.microserviceresenha.controllers.assemblers.UserModelAssembler;
 import com.resenha.microserviceresenha.data.model.User;
+import com.resenha.microserviceresenha.dto.PageableResults;
+import com.resenha.microserviceresenha.dto.ReviewDTO;
 import com.resenha.microserviceresenha.dto.UserDTO;
 import com.resenha.microserviceresenha.dto.model.UserModelDTO;
 import com.resenha.microserviceresenha.exceptions.RecordNotFoundException;
@@ -16,9 +18,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 @Api(value = "UserController")
@@ -29,19 +29,29 @@ public class UserController {
     private final UserService userService;
     private final UserModelAssembler assembler;
 
-    @ApiOperation(value = "Fetch all users", response = UserDTO.class)
-    @GetMapping(value = "/users")
-    public ResponseEntity<List<UserDTO>> findAllUsers() {
-        List<UserDTO> allUsers = userService.getAllUsers();
-        if(allUsers.isEmpty()){
+    @ApiOperation(value = "Fetch all users", response = PageableResults.class)
+    @GetMapping(value = "/users/page/{page}/size/{size}")
+    public ResponseEntity<Map<String, Object>>  findAllUsers(@PathVariable(name = "page") Integer page,
+                                                             @PathVariable(name = "size") Integer size) {
+        final PageableResults<UserDTO> first10ReviewsOrderByCreationDate = userService.getAllUsers(page, size);
+        final List<UserDTO> data = first10ReviewsOrderByCreationDate.getData();
+        final int totalItems = first10ReviewsOrderByCreationDate.getMetadata().getTotal();
+        if(data.isEmpty()){
             throw new RecordNotFoundException("sem filtro");
         }
 
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("currentPage", page);
+        response.put("totalItems", totalItems);
+        response.put("totalReturned", data.size());
+        response.put("totalPages", ( totalItems % size == 0 ? totalItems / size : (totalItems/ size) + 1));
+        response.put("users", data);
+
         return ResponseEntity
                 .ok()
-                .cacheControl(CacheControl.maxAge(60, TimeUnit.SECONDS))
-                .body(allUsers);
+                .body(response);
     }
+
 
     @ApiOperation(value = "Fetch all followed users", response = User.class)
     @GetMapping(value = "/users/following/{userId}")
