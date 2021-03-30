@@ -3,8 +3,8 @@ package com.resenha.microserviceresenha.controllers;
 import com.resenha.microserviceresenha.controllers.assemblers.BookModelAssembler;
 import com.resenha.microserviceresenha.data.model.Book;
 import com.resenha.microserviceresenha.dto.BookDTO;
-import com.resenha.microserviceresenha.dto.PageableResults;
 import com.resenha.microserviceresenha.dto.model.BookModelDTO;
+import com.resenha.microserviceresenha.dto.projection.BookProjectionDTO;
 import com.resenha.microserviceresenha.exceptions.RecordNotFoundException;
 import com.resenha.microserviceresenha.services.BooksService;
 import io.swagger.annotations.Api;
@@ -83,11 +83,11 @@ public class BooksController {
                 .body(booksByReadStatus);
     }
 
-    @ApiOperation(value = "Fetch last created books",response = PageableResults.class)
+    @ApiOperation(value = "Fetch last created books",response = BookProjectionDTO.class)
     @GetMapping("/books/page/{page}/size/{size}")
     public ResponseEntity<Map<String, Object>>  findAllBooksOrderByInsertDate(@PathVariable(name = "page") Integer page,
                                                                         @PathVariable(name = "size") Integer size){
-        final PageableResults<BookDTO> first10ReviewsOrderByCreationDate = booksService.findFirst10OrderByIdDesc(page, size);
+        final BookProjectionDTO first10ReviewsOrderByCreationDate = booksService.findFirst10OrderByIdDesc(page, size);
         final List<BookDTO> data = first10ReviewsOrderByCreationDate.getData();
         final int totalItems = first10ReviewsOrderByCreationDate.getMetadata().getTotal();
         if(data.isEmpty()){

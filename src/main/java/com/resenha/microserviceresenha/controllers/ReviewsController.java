@@ -2,9 +2,9 @@ package com.resenha.microserviceresenha.controllers;
 
 import com.resenha.microserviceresenha.controllers.assemblers.ReviewModelAssembler;
 import com.resenha.microserviceresenha.data.model.Review;
-import com.resenha.microserviceresenha.dto.PageableResults;
 import com.resenha.microserviceresenha.dto.ReviewDTO;
 import com.resenha.microserviceresenha.dto.model.ReviewModelDTO;
+import com.resenha.microserviceresenha.dto.projection.ReviewProjectionDTO;
 import com.resenha.microserviceresenha.exceptions.RecordNotFoundException;
 import com.resenha.microserviceresenha.services.ReviewsService;
 import io.swagger.annotations.Api;
@@ -28,11 +28,11 @@ public class ReviewsController {
     private final ReviewsService reviewsService;
     private final ReviewModelAssembler assembler;
 
-    @ApiOperation(value = "Fetch the recent reviews",response = PageableResults.class)
+    @ApiOperation(value = "Fetch the recent reviews",response = ReviewProjectionDTO.class)
     @GetMapping(value = "/reviews/page/{page}/size/{size}")
     public ResponseEntity<Map<String, Object>> findRecentReviews(@PathVariable(name = "page") Integer page,
                                                                  @PathVariable(name = "size") Integer size){
-        final PageableResults<ReviewDTO> first10ReviewsOrderByCreationDate = reviewsService.findFirst10ReviewsOrderByCreationDate(page, size);
+        final ReviewProjectionDTO first10ReviewsOrderByCreationDate = reviewsService.findRecentReviews(page, size);
         final List<ReviewDTO> data = first10ReviewsOrderByCreationDate.getData();
         final int totalItems = first10ReviewsOrderByCreationDate.getMetadata().getTotal();
         if(data.isEmpty()){
@@ -95,11 +95,11 @@ public class ReviewsController {
                 .body(first10ByOrderByInsertDate);
     }
 
-    @ApiOperation(value = "Search most liked reviews",response = ReviewDTO.class)
+    @ApiOperation(value = "Search most liked reviews",response = ReviewProjectionDTO.class)
     @GetMapping(value = "/reviews/favorites/page/{page}/size/{size}")
     public ResponseEntity<Map<String, Object>> findFavoritesReviews(@PathVariable(name = "page") Integer page,
                                                                 @PathVariable(name = "size") Integer size){
-        final PageableResults<ReviewDTO> first10ReviewsOrderByCreationDate = reviewsService.findFavoritesReviews(page, size);
+        final ReviewProjectionDTO first10ReviewsOrderByCreationDate = reviewsService.findFavoritesReviews(page, size);
         final List<ReviewDTO> data = first10ReviewsOrderByCreationDate.getData();
         final int totalItems = first10ReviewsOrderByCreationDate.getMetadata().getTotal();
         if(data.isEmpty()){

@@ -1,4 +1,4 @@
-package com.resenha.microserviceresenha.dto;
+package com.resenha.microserviceresenha.dto.projection;
 
 import lombok.Getter;
 import lombok.Setter;

@@ -1,17 +1,14 @@
 package com.resenha.microserviceresenha.services;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.mongodb.BasicDBObject;
 import com.resenha.microserviceresenha.data.model.User;
 import com.resenha.microserviceresenha.data.repositories.UserRepository;
-import com.resenha.microserviceresenha.dto.Metadata;
-import com.resenha.microserviceresenha.dto.PageableResults;
 import com.resenha.microserviceresenha.dto.UserDTO;
 import com.resenha.microserviceresenha.dto.model.UserModelDTO;
+import com.resenha.microserviceresenha.dto.projection.UserProjectionDTO;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.bson.types.ObjectId;
-import org.springframework.core.GenericTypeResolver;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.aggregation.*;
@@ -68,7 +65,7 @@ public class UserService {
     }
 
 
-    public PageableResults getAllUsers(int page, int size) {
+    public UserProjectionDTO getAllUsers(int page, int size) {
         LookupOperation lookup1 = LookupOperation.newLookup()
                 .from("users")
                 .localField("following")
@@ -87,7 +84,7 @@ public class UserService {
                 .foreignField("userId")
                 .as("reviews");
 
-        SortOperation sort = sort(Sort.by(Sort.Direction.DESC, "_id"));
+        SortOperation sort = sort(Sort.by(Sort.Direction.ASC, "name"));
         LimitOperation limitOperation = new LimitOperation(size);
 
         CountOperation countOperation = new CountOperation.CountOperationBuilder().as("total");
@@ -100,14 +97,10 @@ public class UserService {
         AggregationOperation unwind2 = Aggregation.unwind("$metadata");
 
         Aggregation aggregation = Aggregation.newAggregation(lookup1, lookup2, lookup3, sort, facetOperation, unwind2);
-        List<BasicDBObject> aggregatedResults = mongoTemplate
-                .aggregate(aggregation, "users", (BasicDBObject.class))
-                .getMappedResults();
-
-        PageableResults<UserDTO> dtoPageableResults =
-                objectMapper.convertValue(aggregatedResults.get(0), PageableResults.class);
-
-        return dtoPageableResults;
+        UserProjectionDTO mappedResult = mongoTemplate
+                .aggregate(aggregation, "users", (UserProjectionDTO.class))
+                .getUniqueMappedResult();
+        return mappedResult;
     }
 
     public List<UserDTO> mountSingleUserProfile(String userId) {

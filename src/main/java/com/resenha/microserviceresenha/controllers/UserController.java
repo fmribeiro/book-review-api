@@ -2,10 +2,9 @@ package com.resenha.microserviceresenha.controllers;
 
 import com.resenha.microserviceresenha.controllers.assemblers.UserModelAssembler;
 import com.resenha.microserviceresenha.data.model.User;
-import com.resenha.microserviceresenha.dto.PageableResults;
-import com.resenha.microserviceresenha.dto.ReviewDTO;
 import com.resenha.microserviceresenha.dto.UserDTO;
 import com.resenha.microserviceresenha.dto.model.UserModelDTO;
+import com.resenha.microserviceresenha.dto.projection.UserProjectionDTO;
 import com.resenha.microserviceresenha.exceptions.RecordNotFoundException;
 import com.resenha.microserviceresenha.services.UserService;
 import io.swagger.annotations.Api;
@@ -29,11 +28,11 @@ public class UserController {
     private final UserService userService;
     private final UserModelAssembler assembler;
 
-    @ApiOperation(value = "Fetch all users", response = PageableResults.class)
+    @ApiOperation(value = "Fetch all users", response = UserProjectionDTO.class)
     @GetMapping(value = "/users/page/{page}/size/{size}")
     public ResponseEntity<Map<String, Object>>  findAllUsers(@PathVariable(name = "page") Integer page,
                                                              @PathVariable(name = "size") Integer size) {
-        final PageableResults<UserDTO> first10ReviewsOrderByCreationDate = userService.getAllUsers(page, size);
+        final UserProjectionDTO first10ReviewsOrderByCreationDate = userService.getAllUsers(page, size);
         final List<UserDTO> data = first10ReviewsOrderByCreationDate.getData();
         final int totalItems = first10ReviewsOrderByCreationDate.getMetadata().getTotal();
         if(data.isEmpty()){
@@ -49,6 +48,7 @@ public class UserController {
 
         return ResponseEntity
                 .ok()
+                .cacheControl(CacheControl.maxAge(60, TimeUnit.SECONDS))
                 .body(response);
     }
 
@@ -77,7 +77,7 @@ public class UserController {
 
         return ResponseEntity
                 .ok()
-                .cacheControl(CacheControl.maxAge(60, TimeUnit.SECONDS))
+                .cacheControl(CacheControl.maxAge(60, TimeUnit.MINUTES))
                 .body(allUsers);
     }
 

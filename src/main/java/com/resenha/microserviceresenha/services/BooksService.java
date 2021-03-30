@@ -4,9 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.resenha.microserviceresenha.data.model.Book;
 import com.resenha.microserviceresenha.data.repositories.BookRepository;
 import com.resenha.microserviceresenha.dto.BookDTO;
-import com.resenha.microserviceresenha.dto.PageableResults;
-import com.resenha.microserviceresenha.dto.ReviewDTO;
 import com.resenha.microserviceresenha.dto.model.BookModelDTO;
+import com.resenha.microserviceresenha.dto.projection.BookProjectionDTO;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.bson.types.ObjectId;
@@ -60,7 +59,7 @@ public class BooksService {
         return results;
     }
 
-    public PageableResults findFirst10OrderByIdDesc(int page, int size){
+    public BookProjectionDTO findFirst10OrderByIdDesc(int page, int size){
         LookupOperation lookup = LookupOperation.newLookup()
                 .from("users")
                 .localField("userId")
@@ -82,10 +81,10 @@ public class BooksService {
         AggregationOperation unwind2 = Aggregation.unwind("$metadata");
 
         Aggregation aggregation = Aggregation.newAggregation(lookup, unwind, sort, facetOperation, unwind2);
-        List<PageableResults> aggregatedResults = mongoTemplate
-                .aggregate(aggregation, "books", PageableResults.class)
-                .getMappedResults();
-        return aggregatedResults.get(0);
+        BookProjectionDTO aggregatedResults = mongoTemplate
+                .aggregate(aggregation, "books", BookProjectionDTO.class)
+                .getUniqueMappedResult();
+        return aggregatedResults;
     }
 
     public Optional<Book> saveUpdateBook(BookModelDTO bookModelDTO){

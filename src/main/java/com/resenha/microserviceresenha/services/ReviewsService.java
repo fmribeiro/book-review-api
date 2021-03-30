@@ -1,13 +1,10 @@
 package com.resenha.microserviceresenha.services;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.mongodb.BasicDBObject;
-import com.mongodb.client.model.Facet;
 import com.resenha.microserviceresenha.data.model.Review;
 import com.resenha.microserviceresenha.data.repositories.ReviewRepository;
-import com.resenha.microserviceresenha.dto.PageableResults;
-import com.resenha.microserviceresenha.dto.ReviewDTO;
 import com.resenha.microserviceresenha.dto.model.ReviewModelDTO;
+import com.resenha.microserviceresenha.dto.projection.ReviewProjectionDTO;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.bson.types.ObjectId;
@@ -32,7 +29,7 @@ public class ReviewsService {
     private MongoTemplate mongoTemplate;
     private ObjectMapper objectMapper;
 
-    public PageableResults findFirst10ReviewsOrderByCreationDate(int page, int size) {
+    public ReviewProjectionDTO findRecentReviews(int page, int size) {
         LookupOperation lookup = LookupOperation.newLookup()
                 .from("users")
                 .localField("userId")
@@ -50,17 +47,16 @@ public class ReviewsService {
         FacetOperation facetOperation = new FacetOperation()
                 .and(countOperation, addFieldsOperation).as("metadata")
                 .and(skipOperation, limitOperation).as("data");
-
         AggregationOperation unwind2 = Aggregation.unwind("$metadata");
 
         Aggregation aggregation = Aggregation.newAggregation(lookup, unwind, sort, facetOperation, unwind2);
-        List<PageableResults> aggregatedResults = mongoTemplate
-                .aggregate(aggregation, "reviews", PageableResults.class)
-                .getMappedResults();
-        return aggregatedResults.get(0);
+        ReviewProjectionDTO aggregatedResults = mongoTemplate
+                .aggregate(aggregation, "reviews", (ReviewProjectionDTO.class))
+                .getUniqueMappedResult();
+        return aggregatedResults;
     }
 
-    public PageableResults findFavoritesReviews(int page, int size) {
+    public ReviewProjectionDTO findFavoritesReviews(int page, int size) {
         LookupOperation lookup = LookupOperation.newLookup()
                 .from("users")
                 .localField("userId")
@@ -82,11 +78,10 @@ public class ReviewsService {
         AggregationOperation unwind2 = Aggregation.unwind("$metadata");
 
         Aggregation aggregation = Aggregation.newAggregation(lookup, unwind,  sort, facetOperation, unwind2);
-        List<PageableResults> aggregatedResults = mongoTemplate
-                .aggregate(aggregation, "reviews", PageableResults.class)
-                .getMappedResults();
-
-        return aggregatedResults.get(0);
+        ReviewProjectionDTO aggregatedResults = mongoTemplate
+                .aggregate(aggregation, "reviews", (ReviewProjectionDTO.class))
+                .getUniqueMappedResult();
+        return aggregatedResults;
     }
 
     public Review findById(String id) {

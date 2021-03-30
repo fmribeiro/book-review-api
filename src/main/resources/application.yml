@@ -51,6 +51,7 @@ security:
     - /reviews/book/**
     - /books/page/**
     - /users/page/**
+    - /users/profile/**
     - /users/idToken/**
     - /swagger-ui/**
     - /swagger-resources/**
