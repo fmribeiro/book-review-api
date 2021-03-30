@@ -91,7 +91,7 @@ public class UserController {
 
         return ResponseEntity
                 .ok()
-                .cacheControl(CacheControl.maxAge(5, TimeUnit.MINUTES))
+//                .cacheControl(CacheControl.maxAge(5, TimeUnit.MINUTES))
                 .body(byId);
     }
 
@@ -112,9 +112,9 @@ public class UserController {
     @ApiOperation(value = "Create a user", response = UserModelDTO.class)
     @PostMapping(value = "/users")
     public ResponseEntity<?> createUser(@RequestBody UserModelDTO userModelDTO) {
-        Optional<User> user = userService.saveOrUpdate(userModelDTO);
+        Optional<UserModelDTO> user = userService.saveOrUpdate(userModelDTO);
         if(user.isPresent()){
-            EntityModel<User> savedBook = assembler.toModel(user.get());
+            EntityModel<UserModelDTO> savedBook = assembler.toModel(user.get());
             return ResponseEntity
                     .created(savedBook.getRequiredLink(IanaLinkRelations.SELF).toUri())
                     .body(savedBook);
@@ -126,12 +126,12 @@ public class UserController {
     @ApiOperation(value = "Update a user", response = UserModelDTO.class)
     @PutMapping(value = "/users")
     public ResponseEntity<?> updateUser(@RequestBody UserModelDTO userModelDTO) {
-        Optional<User> review = userService.saveOrUpdate(userModelDTO);
-        if(review.isPresent()){
-            EntityModel<User> savedBook = assembler.toModel(review.get());
+        Optional<UserModelDTO> user = userService.saveOrUpdate(userModelDTO);
+        if(user.isPresent()){
+            EntityModel<UserModelDTO> savedUser = assembler.toModel(user.get());
             return ResponseEntity
-                    .created(savedBook.getRequiredLink(IanaLinkRelations.SELF).toUri())
-                    .body(savedBook);
+                    .created(savedUser.getRequiredLink(IanaLinkRelations.SELF).toUri())
+                    .body(savedUser);
         }else{
             return new ResponseEntity(HttpStatus.BAD_REQUEST);
         }
