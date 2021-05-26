@@ -45,7 +45,7 @@ public class UserService {
         try{
             User user = objectMapper.convertValue(userModelDTO, User.class);
             userRepository.save(user);
-            return optionalUser.of(userModelDTO);
+            return optionalUser.of(objectMapper.convertValue(user, UserModelDTO.class));
         }
         catch (Exception e){
             log.error("Erro ao criar ou atualizar o usuario", e);
